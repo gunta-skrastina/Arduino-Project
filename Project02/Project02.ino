@@ -14,7 +14,7 @@
 #include <Servo.h>
 
 Servo myservo; 
-int currentPos;
+
 
 int analogPins[] = {A0, A1, A2};
 int servoPositions[] = {0, 90, 180};
@@ -27,20 +27,48 @@ void setup()
 
 void loop() {
 
+  int servoId = 0;
+  static int currentPos = 90;
+  static int goToPos = 90; 
+  int unused;  
+
+  int firstMax = findMaxExept(-1, &servoId);
+  int secondMax = findMaxExept(servoId, &unused);
+
+  if (firstMax - 6 > secondMax)
+  {
+    goToPos = servoPositions[servoId];
+  }
+
+  if (goToPos != currentPos)
+    currentPos = (int)naive_lerp(currentPos, goToPos, 0.2);
+
+  myservo.write(currentPos);
+  delay(20);
+}
+
+int findMaxExept(int exept, int* servoId)
+{
   int maxAnalogValue = 0;
+  
   for (int i = 0; i < 3; i++)
   {
     int analogValue = analogRead(analogPins[i]);
-    if (analogValue > maxAnalogValue)
+    Serial.print(analogValue);
+    Serial.print(" ");
+    if (analogValue > maxAnalogValue && exept != i)
     {
       maxAnalogValue = analogValue;
-      currentPos = servoPositions[i];
+      *servoId = i;
     }
-    Serial.print("Analog reading ");
-    Serial.print(i + 1);
-    Serial.print(": ");
-    Serial.println(analogValue);
   }
-  myservo.write(currentPos);
-  delay(500);
+  Serial.println();
+  return maxAnalogValue;
 }
+
+float naive_lerp(float a, float b, float t)
+{
+    return a + t * (b - a);
+}
+
+
